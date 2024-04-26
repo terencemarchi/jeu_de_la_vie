@@ -1,0 +1,163 @@
+import copy
+import pygame as py
+import sys
+import numpy as np
+import random as rd
+
+
+#---------------------------------------------------------------------Fontions-----------------------------------------------------------------------------------------
+
+def grille():
+    #g = np.array([[rd.randint(0,1) for k in range(nombre_lignes)] for k in range(nombre_collones)])
+    g = np.array([[0 for k in range(nombre_lignes)] for k in range(nombre_collones)])
+    return g
+
+
+def quadriage(couleur, fenetre):
+    for i in range(1, nombre_lignes):
+        for j in range(1, nombre_collones):
+            py.draw.line(fenetre, couleur, (taille_case, taille_case * i), (largeur - taille_case, taille_case * i))
+            py.draw.line(fenetre, couleur, (taille_case * j, taille_case), (taille_case * j, hauteur - taille_case))
+
+
+def colorie_cases(Grille):
+    for i in range(len(Grille)-2):
+        for j in range(len(Grille[0])-2):
+            if Grille[i][j] == 1:
+                py.draw.rect(fenetre, noir, ((i+1) * taille_case, (j+1) * taille_case, taille_case, taille_case))
+
+def est_voisin(Case, case):
+    i, j = Case[0], Case[1]
+    k, l = case[0], case[1]
+
+    if (k == i-1 and (l == j-1 or l == j or l == j+1)) or (k == i and (l == j-1 or l == j+1)) or (k == i+1 and (l == j-1 or l == j or l == j+1)):
+        return True
+    return False
+
+def nombre_voisins_en_vie(Grille,Case):
+    n=0
+    i, j = Case[0], Case[1]
+    for k in range(3):
+        for l in range(3):
+            x = (i-1+k) % (nombre_collones-2)
+            y = (j-1+l) % (nombre_lignes-2)
+            if Grille[x][y] == 1:
+                n += 1
+    if Grille[i][j] == 1:
+        return n-1
+    return n
+
+
+def acctualisation(Grille,Grille2):
+    for i in range(len(Grille)):
+        for j in range(len(Grille[0])):
+            if Grille[i, j] == 1 and (
+                    not (nombre_voisins_en_vie(Grille, [i, j]) == 2 or nombre_voisins_en_vie(Grille, [i, j]) == 3)):
+                Grille2[i, j] = 0
+            if Grille[i, j] == 0 and nombre_voisins_en_vie(Grille, [i, j]) == 3:
+                Grille2[i, j] = 1
+
+
+
+def transformee_coordonees_en_position(coordonnees):
+    position = [0, 0]
+
+    position[0] = int(coordonnees[0]/taille_case)
+    position[1] = int(coordonnees[1]/taille_case)
+    return position
+
+
+#---------------------------------------------------------------------Variables-----------------------------------------------------------------------------------------
+
+
+# Définition de la taille de la fenêtre
+largeur = 1860
+hauteur = 1000
+taille_fenetre = (largeur, hauteur)
+
+# Grille
+taille_case = 20
+nombre_lignes = int(hauteur/taille_case)
+nombre_collones = int(largeur/taille_case)
+Grille = grille()
+
+# Couleurs
+noir = (0, 0, 0)
+blanc = (254, 254, 254)
+
+# Variables temporelles
+clock = py.time.Clock()
+
+# Initialisation des variables de jeu
+coordonnees_souris=[0, 0]
+Depart = 1
+
+# Clignotant
+'''
+g[10][10] = 1
+g[10][11] = 1
+g[10][12] = 1
+'''
+# Planeurs
+'''
+g[3][2] = 1
+g[4][3] = 1
+g[3][4] = 1
+g[4][4] = 1
+g[2][4] = 1
+
+g[13][12] = 1
+g[14][13] = 1
+g[13][14] = 1
+g[14][14] = 1
+g[12][14] = 1
+'''
+
+#---------------------------------------------------------------------Jeu-----------------------------------------------------------------------------------------
+
+# Initialisation de Pygame
+py.init()
+
+
+# Création de la fenêtre
+py.display.set_caption("Titre")
+fenetre = py.display.set_mode(taille_fenetre)
+
+# Boucle principale du jeu
+while True:
+    for event in py.event.get():
+        if event.type == py.QUIT:
+            py.quit()
+            sys.exit()
+        elif event.type == py.MOUSEBUTTONDOWN:
+            coordonnees_souris = py.mouse.get_pos()
+            x = transformee_coordonees_en_position(coordonnees_souris)[0] - 1
+            y = transformee_coordonees_en_position(coordonnees_souris)[1] - 1
+            if event.button == 1:
+                Grille[x][y] = 1
+            elif event.button == 3:
+                Grille[x][y] = 0
+
+
+    touches = py.key.get_pressed()
+    if touches[py.K_SPACE]:
+        Depart +=1
+
+    # Effacer l'écran avec la couleur de fond et afficher la grille
+    fenetre.fill(blanc)
+    quadriage(noir, fenetre)
+
+    colorie_cases(Grille)
+    if Depart % 2 == 0 :
+        # Actualisation de l'affichage des cases vivantes et suppression des cases mortes
+
+        Grille2 = copy.deepcopy(Grille)
+        acctualisation(Grille, Grille2)
+        Grille = Grille2
+
+
+
+
+    # Actualiser l'affichage
+    py.display.flip()
+
